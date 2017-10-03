@@ -43,5 +43,4 @@ void main() {
 		time += calculation();
 	}
 	std::cout << "The total time spend to run "<< 20000000 <<" times of newton sqrt, is "<< time / CLOCKS_PER_SEC << " seconds";
-	system("pause");
 }
