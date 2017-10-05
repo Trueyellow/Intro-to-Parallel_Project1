@@ -7,10 +7,7 @@
 #include <time.h>
 #include "root_calculate.h"
 #include "immintrin.h"
-#include <stdio.h>
 #include <algorithm>
-#include <string.h>
-#include <cstdlib>
 
 using namespace ispc;
 const int single_loop_num = 2000000;
