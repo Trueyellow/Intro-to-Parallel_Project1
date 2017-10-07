@@ -14,8 +14,6 @@ public:
 
 private:
   // Constants are the integer part of the sines of integers (in radians) * 2^32.
-
-
   void to_bytes(uint32_t , uint8_t *);
   uint32_t leftrotate(uint32_t, uint32_t);
   uint32_t to_int32(const uint8_t *);
@@ -26,8 +24,6 @@ private:
 
 
 md5_sequential::md5_sequential(){
-
-
 }
 
 uint32_t md5_sequential::leftrotate(uint32_t x, uint32_t c){
@@ -168,30 +164,3 @@ md5_sequential::md5_sequential_calculate
     to_bytes(h2, digest + 8);
     to_bytes(h3, digest + 12);
 }
-
-// int main(int argc, char **argv) {
-//     char *msg;
-//     size_t len;
-//     int i;
-//     uint8_t result[16];
-//
-//     if (argc < 2) {
-//         printf("usage: %s 'string'\n", argv[0]);
-//         return 1;
-//     }
-//     msg = argv[1];
-//
-//     len = strlen(msg);
-//
-//     // benchmark
-//     for (i = 0; i < 1; i++) {
-//         md5((uint8_t*)msg, len, result);
-//     }
-//
-//     // display result
-//     for (i = 0; i < 16; i++)
-//         printf("%2.2x", result[i]);
-//     puts("");
-//
-//     return 0;
-// }
