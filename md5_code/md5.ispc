@@ -270,24 +270,7 @@ md5_task(uniform unsigned int8 initial_msgs[][5],
                 h3 += d;
 
             }
-          //
-          //   store[j][0] = (unsigned int8) h0;
-          //   store[j][1] = (unsigned int8) (h0 >> 8);
-          //   store[j][2] = (unsigned int8) (h0 >> 16);
-          //   store[j][3] = (unsigned int8) (h0 >> 24);
-          //   store[j][4] = (unsigned int8) h1;
-          //   store[j][5] = (unsigned int8) (h1 >> 8);
-          //   store[j][6] = (unsigned int8) (h1 >> 16);
-          //   store[j][7] = (unsigned int8) (h1 >> 24);
-          //   store[j][8] = (unsigned int8) h2;
-          //   store[j][9] = (unsigned int8) (h2 >> 8);
-          //   store[j][10] = (unsigned int8) (h2 >> 16);
-          //   store[j][11] = (unsigned int8) (h2 >> 24);
-          //   store[j][12] = (unsigned int8) h3;
-          //   store[j][13] = (unsigned int8) (h3 >> 8);
-          //   store[j][14] = (unsigned int8) (h3 >> 16);
-          //   store[j][15] = (unsigned int8) (h3 >> 24);
-          // }
+
           if(we_want_find[0] == (unsigned int8) h0 &&
               we_want_find[1] == (unsigned int8) (h0 >> 8)&&
               we_want_find[2] == (unsigned int8) (h0 >> 16)&&
