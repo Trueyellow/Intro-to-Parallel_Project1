@@ -1,98 +1,116 @@
+//Written by HKX to launch ispc task for md5 algorithm
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "md5.h"
 #include <iostream>
+#include "md5.h"
+
 
 using namespace ispc;
-const int number_of_data = 1600000;
+const int MAX_RUNNING_DATA = 100000000;
 
+// The md5 value that we should find out
+const uint8_t we_want_find[16] =
+{
+  0x5c, 0xe8, 0xb4, 0xe3, 0x3c, 0x23, 0x62, 0x21,
+  0x3d, 0xc2, 0x2f, 0x6c, 0x90, 0x8a, 0x44, 0xc6
+};
+
+const uint8_t true_result[5] =
+{
+75, 75, 75, 0, 0
+};
+
+//print function
 void output(uint8_t * output_data){
-for(int i=0;i<5;i++)
+  for(int i=0;i<5;i++)
   printf("%d", output_data[i]);
 }
 
-int main() {
 
+int main() {
+  // Assign ascii code to a int list for better call
+  // and here are 63 code with ascii[0] = 0, and number 0-9, character A-Z, a-z
   uint8_t ascii[63];
   ascii[0] = 0;
   for(int j=1;j<63;j++){
     if(j<11)
-      ascii[j] = j + 47;
+    ascii[j] = j + 47;
     else if((11 <= j) && (j < 37))
-      ascii[j] = j + 54;
+    ascii[j] = j + 54;
     else if((37 <= j) && (j< 63))
-      ascii[j] = j + 60;
+    ascii[j] = j + 60;
   }
 
-  uint8_t msg_matrix[number_of_data][5];
+  // matrix to store character to sent
+  static uint8_t msg_matrix[MAX_RUNNING_DATA][5];
+
+
+  // new_len is a len parameter, since we only got no more than 5 characters or
+  // numbers, we can just assign this number
   int new_len = 56;
-  uint8_t we_want_find[16];
+
+  //store result
   uint8_t result[5];
 
-  we_want_find[0] = 0x5c;
-  we_want_find[1] = 0xe8;
-  we_want_find[2] = 0xb4;
-  we_want_find[3] = 0xe3;
-  we_want_find[4] = 0x3c;
-  we_want_find[5] = 0x23;
-  we_want_find[6] = 0x62;
-  we_want_find[7] = 0x21;
-  we_want_find[8] = 0x3d;
-  we_want_find[9] = 0xc2;
-  we_want_find[10] = 0x2f;
-  we_want_find[11] = 0x6c;
-  we_want_find[12] = 0x90;
-  we_want_find[13] = 0x8a;
-  we_want_find[14] = 0x46;
-  we_want_find[15] = 0xc6;
-  //
+  //number counter
   int total_num = 0;
 
-  bool flag = false;
+  // store time
   float tTASK[9];
 
+  // flag for early stop
+  bool flag = false;
   // seperate ascii code by chunk of max_num
   for(int a4 = 0;a4 < 63&&flag==false; a4++,total_num++){
   for(int a3 = 0;a3 < 63&&flag==false; a3++,total_num++){
   for(int a2 = 0;a2 < 63&&flag==false; a2++,total_num++){
   for(int a1 = 0;a1 < 63&&flag==false; a1++,total_num++){
   for(int a0 = 0;a0 < 63&&flag==false; a0++,total_num++){
-    msg_matrix[(total_num % number_of_data)][0] = ascii[a0];
-    msg_matrix[(total_num % number_of_data)][1] = ascii[a1];
-    msg_matrix[(total_num % number_of_data)][2] = ascii[a2];
-    msg_matrix[(total_num % number_of_data)][3] = ascii[a3];
-    msg_matrix[(total_num % number_of_data)][4] = ascii[a4];
-  if(total_num % number_of_data == 0 && total_num != 0){
+    // assign a chunk of assii code
+    msg_matrix[(total_num % MAX_RUNNING_DATA)][0] = ascii[a0];
+    msg_matrix[(total_num % MAX_RUNNING_DATA)][1] = ascii[a1];
+    msg_matrix[(total_num % MAX_RUNNING_DATA)][2] = ascii[a2];
+    msg_matrix[(total_num % MAX_RUNNING_DATA)][3] = ascii[a3];
+    msg_matrix[(total_num % MAX_RUNNING_DATA)][4] = ascii[a4];
+
+    if((total_num % MAX_RUNNING_DATA == 0) && total_num != 0){
       //add up all those time for multi-task ispc
-    	for(int number_of_threads = 1; number_of_threads < 9; number_of_threads++){
-    		clock_t begin_time = clock();
+
+      for(int number_of_threads = 1; number_of_threads < 9; number_of_threads++){
+        clock_t begin_time = clock();
         md5_task_wrap(msg_matrix,
                       new_len,
-                      number_of_data,
+                      MAX_RUNNING_DATA,
                       we_want_find,
                       number_of_threads,
                       result);
-    		tTASK[number_of_threads] += float(clock() - begin_time);
-        if(
-          result[0] == 75 &&
-          result[1] == 75 &&
-          result[2] == 75 &&
-          result[3] == 0 &&
-          result[4] == 0
-        )
-        flag = true;
-    		}
-    }
-  }}}}}
+        tTASK[number_of_threads] += float(clock() - begin_time);
 
-	for(int i = 1; i < 9; i++){
-				printf("The total time spend on running ISPC with %d thread:\t %.3f seconds\n",
-				i, tTASK[i]/CLOCKS_PER_SEC);
-	}
-  std::cout<<"\nispc_task output"<<std::endl;
-  output(result);
+        // running indicator
+        std::cout<<number_of_threads<<" threads is running on "
+                << total_num << std::endl;
+        // test for result
+
+        flag = true;
+        for(int h=0;h<5;h++)
+          if (result[h] != true_result[h])
+            flag = false;
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+
+        for(int i = 1; i < 9; i++){
+          printf("The total time spend on running ISPC with %d thread:\t %.3f seconds\n",
+          i, tTASK[i]/CLOCKS_PER_SEC);
+        }
+        std::cout<<"\nispc_task output"<<std::endl;
+        output(result);
 
 return 0;
 }

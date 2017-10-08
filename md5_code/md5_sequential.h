@@ -1,35 +1,35 @@
+// MD5 algorithm Sequential class
 #ifndef MD5_SEQUENTIAL_H_H
 #define MD5_SEQUENTIAL_H_H
-// leftrotate function definition
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <iostream>
+
+// class declare
 class md5_sequential{
 public:
   md5_sequential();
   void md5_sequential_calculate(const uint8_t *, size_t, uint8_t *);
 
 private:
-  // Constants are the integer part of the sines of integers (in radians) * 2^32.
+
   void to_bytes(uint32_t , uint8_t *);
   uint32_t leftrotate(uint32_t, uint32_t);
   uint32_t to_int32(const uint8_t *);
 };
-
-
 #endif
 
-
+// constructor
 md5_sequential::md5_sequential(){
 }
 
+// leftrotate function definition
 uint32_t md5_sequential::leftrotate(uint32_t x, uint32_t c){
-
 return ((x) << (c)) | ((x) >> (32 - (c)));
 }
+
 
 void md5_sequential::to_bytes(uint32_t val, uint8_t *bytes)
 {
@@ -47,6 +47,7 @@ uint32_t md5_sequential::to_int32(const uint8_t *bytes)
         | ((uint32_t) bytes[3] << 24);
 }
 
+// main calculate function
 void
 md5_sequential::md5_sequential_calculate
 (const uint8_t *initial_msg, size_t initial_len, uint8_t *digest) {
@@ -66,6 +67,7 @@ md5_sequential::md5_sequential_calculate
     h2 = 0x98badcfe;
     h3 = 0x10325476;
 
+    // Constants are the integer part of the sines of integers (in radians) * 2^32.
     uint32_t k[64] = {
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
     0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501 ,

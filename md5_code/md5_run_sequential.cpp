@@ -1,3 +1,4 @@
+//Written by HKX to launch Sequential c++ code for md5 algorithm
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,17 +6,28 @@
 #include <iostream>
 #include "md5_sequential.h"
 
-const int number_of_data = 80000;
 const int char_num = 3;
 const int new_len = 56;
 
+//print function
 void output(uint8_t * output_data){
 for(int i=0;i<16;i++)
 printf("%x", output_data[i]);
 }
 
+// The md5 value that we should find out
+const uint8_t we_want_find[16] =
+{
+  0x5c, 0xe8, 0xb4, 0xe3, 0x3c, 0x23, 0x62, 0x21,
+  0x3d, 0xc2, 0x2f, 0x6c, 0x90, 0x8a, 0x44, 0xc6
+};
+
 int main() {
+  // Call to md5_sequential.h
   md5_sequential md5_sequential_class;
+
+  // Assign ascii code to a int list for better call
+  // and here are 63 code with ascii[0] = 0, and number 0-9, character A-Z, a-z
 
   uint8_t ascii[63];
   ascii[0] = 0;
@@ -32,26 +44,10 @@ int main() {
   uint8_t msg_matrix[5];
   uint8_t we_want_find[16];
 
-  we_want_find[0] = 0x5c;
-  we_want_find[1] = 0xe8;
-  we_want_find[2] = 0xb4;
-  we_want_find[3] = 0xe3;
-  we_want_find[4] = 0x3c;
-  we_want_find[5] = 0x23;
-  we_want_find[6] = 0x62;
-  we_want_find[7] = 0x21;
-  we_want_find[8] = 0x3d;
-  we_want_find[9] = 0xc2;
-  we_want_find[10] = 0x2f;
-  we_want_find[11] = 0x6c;
-  we_want_find[12] = 0x90;
-  we_want_find[13] = 0x8a;
-  we_want_find[14] = 0x43;
-  we_want_find[15] = 0xc6;
-  //
   float tSerial = 0.0;
   bool flag = false;
   int total_num = 0;
+
   // seperate ascii code by chunk of max_num
   for(int a4 = 0;a4 < 63&&flag==false; a4++){
   for(int a3 = 0;a3 < 63&&flag==false; a3++){
@@ -59,35 +55,35 @@ int main() {
   for(int a1 = 0;a1 < 63&&flag==false; a1++){
   for(int a0 = 0;a0 < 63&&flag==false; a0++){
     total_num += 1;
+    // Assign ascii code to send into function
     msg_matrix[0] = ascii[a0];
     msg_matrix[1] = ascii[a1];
     msg_matrix[2] = ascii[a2];
     msg_matrix[3] = ascii[a3];
     msg_matrix[4] = ascii[a4];
+    // calculate char number of ascii code
     int char_num =0;
     for(int q=0;q<5;q++)
-    {
       if(msg_matrix[q]!= 0)
-        {
         char_num += 1;
-      }
-    }
 
+    // time counter
     clock_t begin_time = clock();
     md5_sequential_class.md5_sequential_calculate(msg_matrix, char_num, store_sequential);
     tSerial += float(clock() - begin_time);
+    // test for result
     flag = true;
-    for(int h=0;h<16;h++){
+    for(int h=0;h<16;h++)
       if (store_sequential[h] != we_want_find[h])
         flag = false;
+     }
     }
+   }
   }
-  }}}}
+ }
 
 printf("The total time spend on running squential :\t%.3f seconds\n", tSerial/CLOCKS_PER_SEC);
 std::cout<<"\nispc_Sequential output"<<std::endl;
 output(store_sequential);
-
-
 return 0;
 }

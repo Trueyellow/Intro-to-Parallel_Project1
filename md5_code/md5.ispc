@@ -1,5 +1,12 @@
-
-
+// md5.ispc
+// By HKX
+// Both task and ispc(SIMD) code in this ispc
+"""
+There is still some warning like using scatter and gather which might influence
+the performance but to fix those warning, I has to do more practice with ispc
+(Still a little bit confusing about unifor pointer to varying variables and varying
+pointers to uniform variables which shows lots of bugs in function calling)
+"""
 const unsigned int k[64] =
 {
 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee ,
@@ -27,7 +34,6 @@ const unsigned int r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17
 
 // leftrotate function definition
 #define LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
-
 
 inline void
 to_bytes( varying int val, varying unsigned int8 * uniform bytes)
@@ -60,9 +66,9 @@ export void
 md5_cal(uniform unsigned int8 initial_msgs[][5],
         uniform int new_len,
         uniform int total_num,
-        uniform unsigned int8 we_want_find[16], uniform unsigned int8 final[5])
+        const uniform unsigned int8 we_want_find[16],
+        uniform unsigned int8 final[5])
 {
-
 // Initialize vari  ables - simple count in nibbles:
 foreach(j = 0 ... total_num){
     // These vars will contain the hash
@@ -182,11 +188,12 @@ md5_task(uniform unsigned int8 initial_msgs[][5],
         uniform int new_len,
         uniform int len_of_each_task,
         uniform int total_data,
-        uniform unsigned int8 we_want_find[16], uniform unsigned int8 final[5]){
-        // Initialize vari  ables - simple count in nibbles:
-        uniform int start = taskIndex * len_of_each_task;
-  	    uniform int end = min((taskIndex+1) * len_of_each_task, (unsigned int)total_data);
+        const uniform unsigned int8 we_want_find[16],
+        uniform unsigned int8 final[5]){
 
+        // Initialize variables
+        uniform int start = taskIndex * len_of_each_task;
+  	    uniform int end = min((taskIndex+1) * len_of_each_task, total_data);
         foreach(j = start ... end){
             // These vars will contain the hash
             unsigned int  h0 = 0x67452301;
@@ -297,18 +304,22 @@ md5_task(uniform unsigned int8 initial_msgs[][5],
 	}
 }
 
-// A task wrapper for md5_tast
+// A task wrapper for md5_task
 export void
 md5_task_wrap(uniform unsigned int8 initial_msgs[][5],
             uniform int new_len,
             uniform int total_num,
-            uniform unsigned int8 we_want_find[],
+            const uniform unsigned int8 we_want_find[],
             uniform int number_of_threads,
             uniform unsigned int8 final[]){
-		uniform int len_of_data = total_num / number_of_threads;
-		launch[number_of_threads] md5_task(initial_msgs,
+    // assign each task's length
+		uniform int len_of_each_task = total_num / number_of_threads;
+
+    // task launching
+		launch[number_of_threads]
+    md5_task(initial_msgs,
             new_len,
-            len_of_data,
+            len_of_each_task,
             total_num,
             we_want_find,
             final);
