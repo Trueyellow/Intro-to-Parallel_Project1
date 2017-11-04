@@ -1,8 +1,11 @@
-#include<iostream>
+#include <iostream>
 #include <ctime>
-#include<cmath>
+#include <cmath>
 #include <cstdlib>
 #include <iomanip>
+#include <time.h>
+#include <stdlib.h>
+#include <chrono>
 
 using namespace std;
 
@@ -10,12 +13,17 @@ double **newmatrix(int);
 int gaussianelimination(double **,double *, double *, int);
 void showmatrix(double **, int);
 
-int main()
+int main(int argc, char* argv[])
 {
+	time_t time_start, time_end;	
 	srand((unsigned)time(0));
 
 	int n;
-	cout << "Please input the size of the matrix: ";
+	n = atoi(argv[1]);
+	double **A = newmatrix(n);
+	double *b = new double[n];
+	double *y = new double[n];
+	/*cout << "Please input the size of the matrix: ";
 	cin >> n;
 	while (n <= 0) {
 		cout << "The size must be larger than 0. Try again!" << endl;
@@ -24,7 +32,7 @@ int main()
 	double **A = newmatrix(n);
 	double *b = new double[n];
 	double *y = new double[n];
-	/*A[0][0] = 1; A[0][1] = 1; A[0][2] = 0;
+	A[0][0] = 1; A[0][1] = 1; A[0][2] = 0;
 	A[1][0] = 0; A[1][1] = 1; A[1][2] = 2;
 	A[2][0] = 1; A[2][1] = 0; A[2][2] = -1;
 	
@@ -33,12 +41,18 @@ int main()
 	b[2] = 1;*/
 	for (int i = 0; i < n; i++)
 		b[i] = sqrt((double)rand());
-
+	time_start = time(NULL);
 	gaussianelimination(A, b, y, n);
+	time_end = time(NULL);
+	double time = time_end - time_start;
 
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
-	showmatrix(A, n);
+	//showmatrix(A, n);
+	cout << "Execution time is " << time <<" seconds" << endl;
 
+	delete A;
+	delete b;
+	delete y;
 	return 0;
 }
 
@@ -99,6 +113,8 @@ double **newmatrix(int size) {
 	//print the matrix
 	showmatrix(x, size);
 
+	delete l;
+	delete u;
 	return x;
 }
 
