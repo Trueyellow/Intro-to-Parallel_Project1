@@ -1,7 +1,7 @@
 //Written by HKX to launch Sequential c++ code for md5 algorithm
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <math.h>
 #include <stdint.h>
 #include <iostream>
 #include "md5_sequential.h"
@@ -10,8 +10,8 @@
 using namespace std;
 typedef std::chrono::high_resolution_clock Clock;
 int MAX_THREAD;
-const int TOTAL_NUM = 992436543;
-const int MAX_RUNNING_DATA = 120000000;
+const float TOTAL_NUM = 992436543;
+int MAX_RUNNING_DATA = 125000000;
 md5_sequential md5_sequential_class;
 
 void * md5_wrapper(void *);
@@ -38,9 +38,12 @@ int main(int argc, char *argv[]) {
     // and here are 63 code with ascii[0] = 0, and number 0-9, character A-Z, a-z
     MAX_THREAD = atoi(argv[1]);
     float time_consume;
-    pthread_t threads[MAX_THREAD];
+    MAX_RUNNING_DATA = ceil((double)TOTAL_NUM / MAX_THREAD);
+    while(MAX_RUNNING_DATA > 125000000)
+        MAX_RUNNING_DATA = ceil((double)MAX_RUNNING_DATA/2);
+    cout<< "The working data length distributed to each thread is " << MAX_RUNNING_DATA <<endl;
+    pthread_t threads[100];
     uint8_t ascii[63];
-
     ascii[0] = 0;
 
     for(u_int8_t j=1; j<63;j++){
@@ -59,6 +62,7 @@ int main(int argc, char *argv[]) {
     for(int i=0; i<MAX_RUNNING_DATA;i++)
         md5_data.msg_matrix[i] = new uint8_t[5];
 
+    auto begin_time = Clock::now();
     // Separate ascii code by chunk of max_num
     for(int a4 = 0;a4 < 63; a4++){
         for(int a3 = 0;a3 < 63; a3++){
@@ -76,7 +80,7 @@ int main(int argc, char *argv[]) {
                         // if data_num % MAX_RUNNING_DATA, pass  the value to thread to calculate
 
                         if((total_num % MAX_RUNNING_DATA == 0) && total_num != 0){
-                            cout<<"Thread create "<<endl;
+                            cout<<"Thread create"<<endl;
                             pthread_create(&threads[thread_num], NULL, md5_wrapper, &md5_data);
                             thread_num ++;
                         }
@@ -85,10 +89,9 @@ int main(int argc, char *argv[]) {
                         if(thread_num%MAX_THREAD == 0 && thread_num != 0){
                             for(int i = 0; i < MAX_THREAD; i++)
                             {
-                                void *time_return;
-                                pthread_join(threads[i], &time_return);
+                                pthread_join(threads[i], NULL);
                                 cout<<"Thread end!"<<endl;
-                                time_consume += ((float *)time_return)[0] / MAX_THREAD;
+
                             }
                             thread_num = 0;
                         }
@@ -104,22 +107,20 @@ int main(int argc, char *argv[]) {
 
     for(int i = 0; i < thread_num; i++)
     {
-        void *time_return;
-        pthread_join(threads[i], &time_return);
+        pthread_join(threads[i], NULL);
         cout<<"Thread end!"<<endl;
-        time_consume += ((float *)time_return)[0] / thread_num;
     }
+    auto end_time = Clock::now();
+    time_consume = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - begin_time).count() ;
 
     cout<< total_num<<endl;
-    printf("The total time spend on running with 8 threads :\t%.3f seconds\n", time_consume / 1e9);
+    printf("The total time spend on running with %d threads :\t%.3f seconds\n", MAX_THREAD, time_consume / 1e9);
     return 0;
 }
 
 void * md5_wrapper(void * arg){
 
     data_to_thread * temp = (data_to_thread *) arg;
-
-    float * ret= new float[1];
     for(int i=0; i<MAX_RUNNING_DATA;i++){
         // calculate char number of ascii code
         int char_num = 0;
@@ -128,11 +129,9 @@ void * md5_wrapper(void * arg){
                 char_num += 1;
 
         // calculate time consumed calculation
-        auto begin_time = Clock::now();
+
         md5_sequential_class.md5_sequential_calculate(temp->msg_matrix[i], char_num, temp->store_sequential);
-        auto end_time = Clock::now();
-        ret[0] += (float) std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - begin_time).count() ;
     }
 
-    return (void*) ret;
+    return 0;
 }
