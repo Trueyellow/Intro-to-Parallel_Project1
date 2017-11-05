@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	auto time_start = Clock::now();
 	gaussianelimination(A, b, y, n);
 	auto time_end = Clock::now();
-	exe_time = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - begin_time).count();
+	exe_time = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(time_start - time_end).count();
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
 	//showmatrix(A, n);
 	cout << "Execution time is " << exe_time/1e9 <<" seconds" << endl;
