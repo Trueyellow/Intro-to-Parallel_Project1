@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <pthread.h>
 #include <chrono>
+#include <stdlib.h>
 
 using namespace std;
 typedef std::chron::high_resolution_clock Clock;
@@ -101,7 +102,7 @@ void *elimination(void *w) {
 	return(NULL);
 }
 
-int gaussianelimination(double **A, double *b, double *y, int n) {
+int gaussianelimination(double **A, double *b, double *y, int n, int t) {
 	for (int k = 0; k < n; k++)
 	{
 		for (int j = k + 1; j < n; j++)
@@ -111,7 +112,7 @@ int gaussianelimination(double **A, double *b, double *y, int n) {
 		y[k] = b[k] / A[k][k];
 		A[k][k] = 1;
 
-		int threshold = 10;
+		int threshold = t;
 		int thread_num = 4;
 		int real_thread_num = (n - 1 - k) / threshold + 1;
 		if (real_thread_num > 4)
@@ -165,7 +166,8 @@ int main(int argc, char* argv[])
 {
 	srand((unsigned)time(0));
 
-	int n;
+	int n = atoi(argv[1]);
+	int threshold = atoi(argv[2]);
 	/*cout << "Please input the size of the matrix: ";
 	cin >> n;
 	while (n <= 0) {
@@ -186,10 +188,10 @@ int main(int argc, char* argv[])
 		b[i] = sqrt((double)rand());
 	
 	auto time_start = Clock.now();
-	gaussianelimination(A, b, y, n);
+	gaussianelimination(A, b, y, n, threshold);
 	auto time_end = Clock.now();
 	float exe_time = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(time_end - time_start).count();
-	cout<<
+	cout << "Execution time is " << exe_time/1e9 <<" seconds" << endl;
 	
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
 	showmatrix(A, n);
