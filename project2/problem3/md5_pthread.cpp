@@ -131,8 +131,7 @@ void * md5_wrapper(void * arg){
             if(temp->msg_matrix[i][q]!= 0)
                 char_num += 1;
 
-        // calculate time consumed calculation
-_pointer
+        // calculate time consumed calculation_pointer
         md5_sequential_class.md5_sequential_calculate(temp->msg_matrix[i], char_num, temp->store_sequential);
     }
 
