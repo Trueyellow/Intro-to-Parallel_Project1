@@ -38,9 +38,12 @@ int main(int argc, char *argv[]) {
     // and here are 63 code with ascii[0] = 0, and number 0-9, character A-Z, a-z
     MAX_THREAD = atoi(argv[1]);
     float time_consume;
+    
+    // Dynamic assign the max length of data based on the comparation of 1250000000(Bigger may cause memory error)
     MAX_RUNNING_DATA = ceil((double)TOTAL_NUM / MAX_THREAD);
     while(MAX_RUNNING_DATA > 125000000)
         MAX_RUNNING_DATA = ceil((double)MAX_RUNNING_DATA/2);
+    
     cout<< "The working data length distributed to each thread is " << MAX_RUNNING_DATA <<endl;
     pthread_t threads[100];
     uint8_t ascii[63];
