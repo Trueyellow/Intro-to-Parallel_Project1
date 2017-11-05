@@ -73,9 +73,11 @@ double **newmatrix(int size) {
 	}
 
 	//print the matrix
-	showmatrix(x, size);
-	showmatrix(u, size);
-
+	//showmatrix(x, size);
+	//showmatrix(u, size);
+	
+	delete l;
+	delete u;
 	return x;
 }
 
