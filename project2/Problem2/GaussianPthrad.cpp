@@ -1,11 +1,13 @@
-#include<iostream>
+#include <iostream>
 #include <ctime>
-#include<cmath>
+#include <cmath>
 #include <cstdlib>
 #include <iomanip>
-#include<pthread.h>
+#include <pthread.h>
+#include <chrono>
 
 using namespace std;
+typedef std::chron::high_resolution_clock Clock;
 
 double **newmatrix(int);
 int gaussianelimination(double **, double *, double *, int);
@@ -159,17 +161,17 @@ void showmatrix(double **matrix, int n) {
 	}
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 	srand((unsigned)time(0));
 
 	int n;
-	cout << "Please input the size of the matrix: ";
+	/*cout << "Please input the size of the matrix: ";
 	cin >> n;
 	while (n <= 0) {
 		cout << "The size must be larger than 0. Try again!" << endl;
 		cin >> n;
-	}
+	}*/
 	A = newmatrix(n);
 	b = new double[n];
 	y = new double[n];
