@@ -184,9 +184,13 @@ int main(int argc, char* argv[])
 	b[2] = 1;*/
 	for (int i = 0; i < n; i++)
 		b[i] = sqrt((double)rand());
-
+	
+	auto time_start = Clock.now();
 	gaussianelimination(A, b, y, n);
-
+	auto time_end = Clock.now();
+	float exe_time = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(time_end - time_start).count();
+	cout<<
+	
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
 	showmatrix(A, n);
 
