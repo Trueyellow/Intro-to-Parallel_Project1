@@ -8,6 +8,7 @@
 #include <chrono>
 
 using namespace std;
+typedef std::chrono::high_resolution_clock Clock;
 
 double **newmatrix(int);
 int gaussianelimination(double **,double *, double *, int);
@@ -15,7 +16,7 @@ void showmatrix(double **, int);
 
 int main(int argc, char* argv[])
 {
-	time_t time_start, time_end;	
+	float exe_time;
 	srand((unsigned)time(0));
 
 	int n;
@@ -41,14 +42,13 @@ int main(int argc, char* argv[])
 	b[2] = 1;*/
 	for (int i = 0; i < n; i++)
 		b[i] = sqrt((double)rand());
-	time_start = time(NULL);
+	auto time_start = Clock::now();
 	gaussianelimination(A, b, y, n);
-	time_end = time(NULL);
-	double time = time_end - time_start;
-
+	auto time_end = Clock::now();
+	exe_time = (float) std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - begin_time).count();
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
 	//showmatrix(A, n);
-	cout << "Execution time is " << time <<" seconds" << endl;
+	cout << "Execution time is " << exe_time/1e9 <<" seconds" << endl;
 
 	delete A;
 	delete b;
