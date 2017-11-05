@@ -195,6 +195,9 @@ int main(int argc, char* argv[])
 	
 	cout << y[0] << ", " << y[1] << ", " << y[2] << endl;
 	showmatrix(A, n);
-
+	
+	delete A;
+	delete b;
+	delete y;
 	return 0;
 }
