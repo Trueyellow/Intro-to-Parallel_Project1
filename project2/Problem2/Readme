@@ -1,6 +1,6 @@
 *********************Readme for code of Problem 2: Gaussian elimination********************
 
-The attachment contains sequntial and pthread versions of code running Gaussian elimination.
+The file contains sequntial and pthread versions of code running Gaussian elimination.
 
 To run on g++:
 
