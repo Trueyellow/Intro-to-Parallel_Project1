@@ -1,4 +1,6 @@
-//Kaixiang Huang demo program for calculating 20000000 random numbers' square root by newton method
+//Kaixiang Huang project 2 problem 1
+//because pthread is not friendly for class usage, so I am so sorry to write all these code in one program
+
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
@@ -10,7 +12,8 @@
 #include<bits/stdc++.h>
 using namespace std;
 typedef std::chrono::high_resolution_clock Clock;
-pthread_barrier_t barrier;
+
+
 
 // struct data to thread
 typedef struct data_to_thread_bit{
@@ -29,12 +32,11 @@ typedef struct data_to_thread_quick{
 typedef struct data_to_thread_radix {
     int *zero_bits;
     int *one_bits;
-    int thread_id;
     unsigned *temp_pointer;
-
 } data_to_thread_radix;
 
 pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+pthread_barrier_t barrier;
 
 data_to_thread_radix *radix_thread_arg;
 
@@ -42,6 +44,7 @@ data_to_thread_radix *radix_thread_arg;
 int * data, *quick_data;
 unsigned * unsigned_data;
 int data_num, pthread_num;
+
 //Global Active thread number
 int now_thread_num = 0;
 
@@ -78,7 +81,7 @@ int main(int argc, char *argv[])
     data_num = pow(2, atoi(argv[1]));
     pthread_num = pow(2, atoi(argv[2]));
 
-    auto * random_data = new int[data_num];
+    int * random_data = new int[data_num];
     data = new int[data_num];
 
     for (int j = 0; j < data_num; j++) {
@@ -132,7 +135,13 @@ int main(int argc, char *argv[])
 //    for (int i=0; i<data_num; i++)
 //        printf("%d ", unsigned_data[i]);
 
+    // garbage collection
+    pthread_mutex_destroy(&m);
     delete[] data;
+    delete[] random_data;
+    delete[] unsigned_data;
+    delete[] quick_data;
+
     return 0;
 }
 
@@ -143,7 +152,6 @@ int asc(const void* a, const void *b) {
     if ( *a1 < *a2 ) return -1;
     return *a1 != *a2;
 }
-
 int desc(const void* a,const void *b) {
     int* a1 = (int *)a;
     int* a2 = (int *)b;
@@ -175,11 +183,9 @@ void squential_merge(int low, int cnt, int flag){
 
     left = maxim;
     right = maxim + 1;
-
     if (right == cnt ){
         right = 0;
     }
-
     if (flag == 0){
         for (int i=0; i<cnt; ++i) {
             if (temp_data[left] > temp_data[right]) {
@@ -212,6 +218,7 @@ void squential_merge(int low, int cnt, int flag){
     }
 }
 
+
 // Thread merge function wrapper
 void* MergeThreadFunction ( void* arg ) {
     data_to_thread_bit * temp = (data_to_thread_bit *) arg;
@@ -220,7 +227,7 @@ void* MergeThreadFunction ( void* arg ) {
     }
 }
 
-// THread compare and swap function wrapper
+// thread compare and swap function wrapper
 void *compAndSwap_wrapper(void *arg){
     data_to_thread_bit * temp = (data_to_thread_bit *) arg;
     for(int i=temp->low; i<(temp->low + temp->cnt); i++ ) {
@@ -228,7 +235,7 @@ void *compAndSwap_wrapper(void *arg){
     }
 }
 
-
+// bitonic merge function
 void bitonicMerge(int low, int cnt, int flag)
 {
     // mutex lock to access to thread number counter
@@ -247,7 +254,103 @@ void bitonicMerge(int low, int cnt, int flag)
         data_compAndSwap.cnt = k/2;
         data_compAndSwap.flag = flag;
 
-        // create a thread and a sequential one to speed up
+        // create a thread and a sequential one to speed up//Kaixiang Huang demo program for calculating 20000000 random numbers' square root by newton method
+2
+#include <stdio.h>
+3
+#include <math.h>
+4
+#include <iostream>
+5
+#include <cstdlib>
+6
+#include <algorithm>
+7
+#include <cstdlib>
+8
+#include <chrono>
+9
+#include <pthread.h>
+10
+#include<bits/stdc++.h>
+11
+using namespace std;
+12
+typedef std::chrono::high_resolution_clock Clock;
+13
+pthread_barrier_t barrier;
+14
+​
+15
+// struct data to thread
+16
+typedef struct data_to_thread_bit{
+17
+    int low;
+18
+    int cnt;
+19
+    int flag;
+20
+} data_to_thread_bit;
+21
+​
+22
+​
+23
+typedef struct data_to_thread_quick{
+24
+    int l;
+25
+    int r;
+26
+} data_to_thread_quick;
+27
+​
+28
+​
+29
+typedef struct data_to_thread_radix {
+30
+    int *zero_bits;
+31
+    int *one_bits;
+32
+    int thread_id;
+33
+    unsigned *temp_pointer;
+34
+​
+35
+} data_to_thread_radix;
+36
+​
+37
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+38
+​
+39
+data_to_thread_radix *radix_thread_arg;
+40
+​
+41
+// data to be sorted
+42
+int * data, *quick_data;
+43
+unsigned * unsigned_data;
+44
+int data_num, pthread_num;
+45
+//Global Active thread number
+46
+int now_thread_num = 0;
+47
+​
+48
+​
+49
+// definition of all functions
         pthread_create(&compAndSwap_thread, NULL, compAndSwap_wrapper, &data_compAndSwap);
         for (int i= (low + k/2); i<low+k; i++)
             compAndSwap(i, i+k, flag);
@@ -279,9 +382,9 @@ void bitonicMerge(int low, int cnt, int flag)
         // If there is no more threads or there is no need to call a thread to do merge operation
         pthread_mutex_unlock(&m);
         squential_merge(low, cnt, flag);
+
     }
 }
-
 
 // sort thread wrapper
 void * thread_sort_wrapper(void *arg){
@@ -338,6 +441,7 @@ void sort_wrapper(int N, int up)
 }
 
 
+// function for sequential quick sort
 void QuickSort(int top, int bottom)
 {
     // top = subscript of beginning of array
@@ -351,7 +455,7 @@ void QuickSort(int top, int bottom)
 }
 
 
-//Function to determine the partitions
+// Function to determine the partitions
 // partitions the array and returns the middle subscript
 int partition(int top, int bottom)
 {
@@ -372,6 +476,7 @@ int partition(int top, int bottom)
 }
 
 
+// wrapper of quick sort
 void* quick_Sort_wrapper(void *arg)
 {
 
@@ -379,15 +484,22 @@ void* quick_Sort_wrapper(void *arg)
     parallel_quicksort(start->l, start->r);
 }
 
+/*
+IN FACT, quick sort is the slowest one consider the limit number of threads and
+the recursive calling of new sort function, here I use a small qsort function to keep the efficiency of our program
+*/
 
+// true quick sort
 void parallel_quicksort(int l, int r)
 {
-
     if(r > l)
     {
         int middle = partition(l, r);
         pthread_mutex_lock (&m);
-        if (now_thread_num < pthread_num && (middle - 1 - l) > 16384 &&(r - middle - 1) > 16384)
+
+        // Consider the efficency of quick sort, I here set a threshold that if the size of data to sort is too small
+        // to create a new thread
+        if (now_thread_num < pthread_num && ((middle - 1 - l) > 2048 || (r - middle - 1) > 2048))
         {
             now_thread_num++;
             pthread_mutex_unlock (&m);
@@ -400,28 +512,35 @@ void parallel_quicksort(int l, int r)
         }
         else{
             pthread_mutex_unlock (&m);
-            if(middle - 1 - l>0)
+
+            // may be some bound problem(qsort function for efficiency)
+            if(middle - 1 - l > 0)
                 qsort(quick_data + l, middle - 1 - l, sizeof(int), asc);
+
             if(r - middle > 0)
                 qsort(quick_data + middle, r - middle, sizeof(int), asc);
+
             return;
         }
     }
 }
 
 
+// wrapper for radix sort
 void radix_sort_wrapper(){
 
     unsigned *temp =  new unsigned[data_num];
-    int * zero = new int[pthread_num + 1 ];
-    int * ones = new int[pthread_num + 1];
-    pthread_t radix_thread[pthread_num + 1];
-    pthread_barrier_init (&barrier, NULL, (unsigned)pthread_num);
+    int * zero = new int[pthread_num];
+    int * ones = new int[pthread_num];
 
+    pthread_t radix_thread[pthread_num];
+    // barrier initialization
+    pthread_barrier_init(&barrier, NULL, (unsigned)pthread_num);
+
+    // for each thread, we have a set of args(like a kind of global varibles)
     for(int i=0; i<pthread_num; i++)
     {
         radix_thread_arg[i].temp_pointer = temp;
-        radix_thread_arg[i].thread_id = i;
         radix_thread_arg[i].one_bits = ones;
         radix_thread_arg[i].zero_bits = zero;
         int * point = new int;
@@ -434,22 +553,123 @@ void radix_sort_wrapper(){
     }
     delete[] temp;
     pthread_barrier_destroy(&barrier);
-}
+}//Kaixiang Huang demo program for calculating 20000000 random numbers' square root by newton method
+2
+#include <stdio.h>
+3
+#include <math.h>
+4
+#include <iostream>
+5
+#include <cstdlib>
+6
+#include <algorithm>
+7
+#include <cstdlib>
+8
+#include <chrono>
+9
+#include <pthread.h>
+10
+#include<bits/stdc++.h>
+11
+using namespace std;
+12
+typedef std::chrono::high_resolution_clock Clock;
+13
+pthread_barrier_t barrier;
+14
+​
+15
+// struct data to thread
+16
+typedef struct data_to_thread_bit{
+17
+    int low;
+18
+    int cnt;
+19
+    int flag;
+20
+} data_to_thread_bit;
+21
+​
+22
+​
+23
+typedef struct data_to_thread_quick{
+24
+    int l;
+25
+    int r;
+26
+} data_to_thread_quick;
+27
+​
+28
+​
+29
+typedef struct data_to_thread_radix {
+30
+    int *zero_bits;
+31
+    int *one_bits;
+32
+    int thread_id;
+33
+    unsigned *temp_pointer;
+34
+​
+35
+} data_to_thread_radix;
+36
+​
+37
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+38
+​
+39
+data_to_thread_radix *radix_thread_arg;
+40
+​
+41
+// data to be sorted
+42
+int * data, *quick_data;
+43
+unsigned * unsigned_data;
+44
+int data_num, pthread_num;
+45
+//Global Active thread number
+46
+int now_thread_num = 0;
+47
+​
+48
+​
+49
+// definition of all functions
 
 void *radix_sort(void *arg){
 
     int thread_num = *((int *) arg);
+
     unsigned *t_pointer = radix_thread_arg[thread_num].temp_pointer;
     int * zero_num = radix_thread_arg[thread_num].zero_bits;
     int * one_num = radix_thread_arg[thread_num].one_bits;
 
     int work_distribute = ceil(data_num/pthread_num);
     int start = work_distribute * thread_num;
+
+    // set end point, but consider the bound problem
     int end = (thread_num+1)!=pthread_num ? work_distribute*(thread_num + 1):data_num;
 
 
     for(int bits=0; bits<29; bits++){
+
         zero_num[thread_num] = 0;
+
         for(int k = start; k<end; k++)
             if(((unsigned_data[k]>>bits) & 1) == 0)
                 zero_num[thread_num]++;
@@ -457,6 +677,8 @@ void *radix_sort(void *arg){
 
         pthread_barrier_wait(&barrier);
 
+        // calculate the number of counts in each distributed data block, then add then up for different thread
+        // to do the data arrangement in different thread concurrently
         int zero_count=0, index_count=0;
         for(int i = 0; i<thread_num;i++)
         {
@@ -469,8 +691,10 @@ void *radix_sort(void *arg){
         for (int i = thread_num ; i < pthread_num; i++ ) {
             index_count += zero_num[i];
         }
+        // barrier to make sure all index_count and zero_count is set correctly
         pthread_barrier_wait(&barrier);
 
+        // set up the new shape based on the radix sort's result
         for(int i =start; i<end;i++){
             if(((unsigned_data[i]>>bits) & 1) == 0)
                 t_pointer[zero_count++] = unsigned_data[i];
@@ -478,11 +702,9 @@ void *radix_sort(void *arg){
                 t_pointer[index_count++] = unsigned_data[i];
         }
 
-        pthread_barrier_wait(&barrier);
-
+        // exchange data from temp to source data
         for(int i=start; i<end; i++)
             unsigned_data[i] = t_pointer[i];
 
-        pthread_barrier_wait(&barrier);
     }
 }
