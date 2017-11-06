@@ -1,1 +1,14 @@
-sdasdas
+*********************Readme for code of Problem 2: Gaussian elimination********************
+
+The file contains sequntial and pthread versions of code running Gaussian elimination.
+
+To run on g++:
+
+1. change directory to the code file direction
+2. open terminal, type: $g++ GaussianPthread.cpp -o pthread -std=c++0x -lpthread  
+3. to run sequential version, type: ./[file name] [matrix size]
+   eg: ./sequential 2000
+4. to run pthread version, type: ./[file name] [matrix size] [threshold]
+   eg: ./pthread 2000 10
+
+After the program finishes, the runtime will be shown as result.
