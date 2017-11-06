@@ -10,23 +10,40 @@
 #include<bits/stdc++.h>
 using namespace std;
 typedef std::chrono::high_resolution_clock Clock;
-
-
-pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
-// data to be sorted
-int * data;
-
-int data_num, pthread_num;
-
-//Global Active thread number
-int now_thread_num = 0;
+pthread_barrier_t barrier;
 
 // struct data to thread
-typedef struct data_to_thread{
+typedef struct data_to_thread_bit{
     int low;
     int cnt;
     int flag;
-} data_to_thread;
+} data_to_thread_bit;
+
+
+typedef struct data_to_thread_quick{
+    int l;
+    int r;
+} data_to_thread_quick;
+
+
+typedef struct data_to_thread_radix {
+    int *zero_bits;
+    int *one_bits;
+    int thread_id;
+    unsigned *temp_pointer;
+
+} data_to_thread_radix;
+
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+
+data_to_thread_radix *radix_thread_arg;
+
+// data to be sorted
+int * data, *quick_data;
+unsigned * unsigned_data;
+int data_num, pthread_num;
+//Global Active thread number
+int now_thread_num = 0;
 
 
 // definition of all functions
@@ -40,15 +57,93 @@ void bitonicMerge(int, int, int);
 void* thread_sort_wrapper(void *);
 void sort_wrapper(int, int);
 void bitonicSort(int , int , int );
+void parallel_quicksort(int, int);
+void* quick_Sort_wrapper(void *);
+int partition(int , int);
+void QuickSort(int, int);
+void *radix_sort(void *);
+void radix_sort_wrapper();
 
+
+// main
+int main(int argc, char *argv[])
+{
+
+    if (argc != 3) {
+        printf("Usage: %s a b \n arg: a is the power of two which indicate the size of data.\n "
+                       "arg: b is the power of two which indicates number of threads\n", argv[0]);
+        exit(1);
+    }
+
+    data_num = pow(2, atoi(argv[1]));
+    pthread_num = pow(2, atoi(argv[2]));
+
+    auto * random_data = new int[data_num];
+    data = new int[data_num];
+
+    for (int j = 0; j < data_num; j++) {
+        //Generate random number
+        random_data[j] = (int) float(rand()) / float (RAND_MAX / 1000);
+        data[j] = random_data[j];
+    }
+
+    int sort_up = 1;   // means sort in ascending order
+    auto begin_time = Clock::now();
+    sort_wrapper(data_num, sort_up);
+    auto end_time = Clock::now();
+    double sort_time = (double) std::chrono::duration_cast<std::chrono::nanoseconds> (end_time - begin_time).count();
+    printf("The total time spend on bitonicSort with data number: %d and thread number: %d is %.3f seconds\n",
+           data_num, pthread_num, sort_time/1e9);
+
+    quick_data = new int[data_num];
+    for (int j = 0; j < data_num; j++) {
+        //Reset data
+        quick_data[j] = random_data[j];
+    }
+
+    now_thread_num = 0;
+
+    begin_time = Clock::now();
+    parallel_quicksort(0, data_num - 1);
+    end_time = Clock::now();
+    sort_time = (double) std::chrono::duration_cast<std::chrono::nanoseconds> (end_time - begin_time).count();
+    printf("The total time spend on quick sort with data number: %d and thread number: %d is %.3f seconds\n",
+           data_num, pthread_num, sort_time/1e9);
+
+    unsigned_data = new unsigned[data_num];
+
+    for (int j = 0; j < data_num; j++) {
+        //Reset data
+        unsigned_data[j] = (unsigned) random_data[j];
+    }
+
+    now_thread_num = 0;
+
+    radix_thread_arg = new data_to_thread_radix[pthread_num];
+    begin_time = Clock::now();
+    radix_sort_wrapper();
+    end_time = Clock::now();
+    sort_time = (double) std::chrono::duration_cast<std::chrono::nanoseconds> (end_time - begin_time).count();
+    printf("The total time spend on radix sort with data number: %d and thread number: %d is %.3f seconds\n",
+           data_num, pthread_num, sort_time/1e9);
+
+
+//    printf("Sorted array: \n");
+//    for (int i=0; i<data_num; i++)
+//        printf("%d ", unsigned_data[i]);
+
+    delete[] data;
+    return 0;
+}
 
 // Two functions for qsort function
-int asc(const void* a,const void *b) {
+int asc(const void* a, const void *b) {
     int* a1 = (int *)a;
     int* a2 = (int *)b;
     if ( *a1 < *a2 ) return -1;
     return *a1 != *a2;
 }
+
 int desc(const void* a,const void *b) {
     int* a1 = (int *)a;
     int* a2 = (int *)b;
@@ -119,7 +214,7 @@ void squential_merge(int low, int cnt, int flag){
 
 // Thread merge function wrapper
 void* MergeThreadFunction ( void* arg ) {
-    data_to_thread * temp = (data_to_thread *) arg;
+    data_to_thread_bit * temp = (data_to_thread_bit *) arg;
     if (temp->cnt > 1) {
         bitonicMerge(temp->low, temp->cnt, temp->flag );
     }
@@ -127,7 +222,7 @@ void* MergeThreadFunction ( void* arg ) {
 
 // THread compare and swap function wrapper
 void *compAndSwap_wrapper(void *arg){
-    data_to_thread * temp = (data_to_thread *) arg;
+    data_to_thread_bit * temp = (data_to_thread_bit *) arg;
     for(int i=temp->low; i<(temp->low + temp->cnt); i++ ) {
         compAndSwap(i,  i + 2*temp->cnt, temp->flag);
     }
@@ -146,7 +241,7 @@ void bitonicMerge(int low, int cnt, int flag)
         int k = cnt/2;
 
         // set thread data
-        data_to_thread data_compAndSwap;
+        data_to_thread_bit data_compAndSwap;
         pthread_t compAndSwap_thread;
         data_compAndSwap.low = low;
         data_compAndSwap.cnt = k/2;
@@ -165,7 +260,7 @@ void bitonicMerge(int low, int cnt, int flag)
         pthread_t merge_thread;
 
         // merge thread data
-        data_to_thread merge_data;
+        data_to_thread_bit merge_data;
         merge_data.low = low;
         merge_data.cnt = k;
         merge_data.flag = flag;
@@ -190,7 +285,7 @@ void bitonicMerge(int low, int cnt, int flag)
 
 // sort thread wrapper
 void * thread_sort_wrapper(void *arg){
-    data_to_thread * tem = (data_to_thread *) arg;
+    data_to_thread_bit * tem = (data_to_thread_bit *) arg;
     if(tem->cnt > 1){
         bitonicSort(tem->low, tem->cnt, tem->flag);
     }
@@ -210,7 +305,7 @@ void bitonicSort(int low, int cnt, int flag)
             pthread_mutex_unlock(&m);
 
             // prepare thread data
-            data_to_thread thread_data;
+            data_to_thread_bit thread_data;
             pthread_t sort_thread;
             thread_data.flag = 1;
             thread_data.low = low;
@@ -242,39 +337,152 @@ void sort_wrapper(int N, int up)
     bitonicSort(0, N, up);
 }
 
-// main
-int main(int argc, char *argv[])
+
+void QuickSort(int top, int bottom)
+{
+    // top = subscript of beginning of array
+    // bottom = subscript of end of array
+    if (top < bottom)
+    {
+        int middle = partition(top, bottom);
+        QuickSort(top, middle-1);   // sort first section
+        QuickSort(middle+1, bottom);    // sort second section
+    }
+}
+
+
+//Function to determine the partitions
+// partitions the array and returns the middle subscript
+int partition(int top, int bottom)
+{
+    int pivot = top + (bottom - top) / 2;
+    int pivotV = quick_data[pivot];
+    swap(quick_data[pivot], quick_data[bottom]);
+    int sl = top;
+    for (int i=top ; i<bottom ; i++)
+    {
+        if (quick_data[i] <= pivotV)
+        {
+            swap(quick_data[i], quick_data[sl]);
+            sl++;
+        }
+    }
+    swap(quick_data[sl], quick_data[bottom]);
+    return sl;
+}
+
+
+void* quick_Sort_wrapper(void *arg)
 {
 
-    if (argc != 3) {
-        printf("Usage: %s a b \n arg: a is the power of two which indicate the size of data.\n "
-                       "arg: b is the power of two which indicates number of threads\n", argv[0]);
-        exit(1);
+    data_to_thread_quick *start = (data_to_thread_quick*) arg;
+    parallel_quicksort(start->l, start->r);
+}
+
+
+void parallel_quicksort(int l, int r)
+{
+
+    if(r > l)
+    {
+        int middle = partition(l, r);
+        pthread_mutex_lock (&m);
+        if (now_thread_num < pthread_num && (middle - 1 - l) > 16384 &&(r - middle - 1) > 16384)
+        {
+            now_thread_num++;
+            pthread_mutex_unlock (&m);
+
+            data_to_thread_quick arg = {l, middle-1};
+            pthread_t thread;
+            pthread_create(&thread, NULL, quick_Sort_wrapper, &arg);
+            parallel_quicksort(middle+1, r);
+            pthread_join(thread, NULL);
+        }
+        else{
+            pthread_mutex_unlock (&m);
+            if(middle - 1 - l>0)
+                qsort(quick_data + l, middle - 1 - l, sizeof(int), asc);
+            if(r - middle > 0)
+                qsort(quick_data + middle, r - middle, sizeof(int), asc);
+            return;
+        }
+    }
+}
+
+
+void radix_sort_wrapper(){
+
+    unsigned *temp =  new unsigned[data_num];
+    int * zero = new int[pthread_num + 1 ];
+    int * ones = new int[pthread_num + 1];
+    pthread_t radix_thread[pthread_num + 1];
+    pthread_barrier_init (&barrier, NULL, (unsigned)pthread_num);
+
+    for(int i=0; i<pthread_num; i++)
+    {
+        radix_thread_arg[i].temp_pointer = temp;
+        radix_thread_arg[i].thread_id = i;
+        radix_thread_arg[i].one_bits = ones;
+        radix_thread_arg[i].zero_bits = zero;
+        int * point = new int;
+        *point = i;
+        pthread_create (&radix_thread[i], NULL, radix_sort, point);
     }
 
-    data_num = pow(2, atoi(argv[1]));
-    pthread_num = pow(2, atoi(argv[2]));
-    data = new int[data_num];
-
-    for (int j = 0; j < data_num; j++) {
-        //Generate random number
-        data[j] = (int) float(rand()) / float (RAND_MAX / 1000);
+    for (int i = 0; i < pthread_num; i++ ) {
+        pthread_join(radix_thread[i], NULL);
     }
+    delete[] temp;
+    pthread_barrier_destroy(&barrier);
+}
+
+void *radix_sort(void *arg){
+
+    int thread_num = *((int *) arg);
+    unsigned *t_pointer = radix_thread_arg[thread_num].temp_pointer;
+    int * zero_num = radix_thread_arg[thread_num].zero_bits;
+    int * one_num = radix_thread_arg[thread_num].one_bits;
+
+    int work_distribute = ceil(data_num/pthread_num);
+    int start = work_distribute * thread_num;
+    int end = (thread_num+1)!=pthread_num ? work_distribute*(thread_num + 1):data_num;
 
 
-    int sort_up = 0;   // means sort in ascending order
-    auto begin_time = Clock::now();
-    sort_wrapper(data_num, sort_up);
-    auto end_time = Clock::now();
-    double sort_time = (double) std::chrono::duration_cast<std::chrono::nanoseconds> (end_time - begin_time).count();
-    printf("The total time spend on bitonicSort with data number: %d and thread number: %d is %.3f seconds\n",
-           data_num, pthread_num, sort_time/1e9);
+    for(int bits=0; bits<29; bits++){
+        zero_num[thread_num] = 0;
+        for(int k = start; k<end; k++)
+            if(((unsigned_data[k]>>bits) & 1) == 0)
+                zero_num[thread_num]++;
+        one_num[thread_num] = work_distribute - zero_num[thread_num];
 
-//    printf("Sorted array: \n");
-//    for (int i=0; i<data_num; i++)
-//        printf("%d ", data[i]);
+        pthread_barrier_wait(&barrier);
 
-    delete[] data;
+        int zero_count=0, index_count=0;
+        for(int i = 0; i<thread_num;i++)
+        {
+            zero_count += zero_num[i];
+            index_count += one_num[i];
+        }
 
-    return 0;
+        index_count += zero_count;
+
+        for (int i = thread_num ; i < pthread_num; i++ ) {
+            index_count += zero_num[i];
+        }
+        pthread_barrier_wait(&barrier);
+
+        for(int i =start; i<end;i++){
+            if(((unsigned_data[i]>>bits) & 1) == 0)
+                t_pointer[zero_count++] = unsigned_data[i];
+            else
+                t_pointer[index_count++] = unsigned_data[i];
+        }
+
+        pthread_barrier_wait(&barrier);
+
+        for(int i=start; i<end; i++)
+            unsigned_data[i] = t_pointer[i];
+
+        pthread_barrier_wait(&barrier);
+    }
 }
